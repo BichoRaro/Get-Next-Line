@@ -15,7 +15,9 @@
 /*  
 Esta función se encarga de leer el file descriptor.
 Comienza a leer byte por byte (leer letra por letra) hasta el tamaño del buffer (n).
-Hacemos dos verificaciones de seguridad: la primera es el caso de negativos (-), y
+Hacemos dos verificaciones de seguridad: la moulinette tomaba invalido el read con -1 ya
+que no tomaba el buffer por lo que tuve que agregar la linea 47 y 48
+de la funcion read line, la primera es el caso de negativos (-), y
 la segunda es si los bytes a leer son cero, es decir, no hay nada que leer,
 pues directamente se detiene. Si todo ha salido bien y ha pasado las
 verificaciones de seguridad, pasamos a añadir el carácter nulo.
@@ -42,7 +44,10 @@ static int	read_line(int fd, char **stash)
 	{
 		bytes_read = read(fd, buffer, BUFFER_SIZE);
 		if (bytes_read < 0)
+		{
+			free(buffer);
 			return (-1);
+		}
 		if (bytes_read == 0)
 			break ;
 		buffer[bytes_read] = '\0';
@@ -143,7 +148,7 @@ char	*get_next_line(int fd)
 	static char	*stash;
 	char		*line;
 
-	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
+	if (fd < 0 || BUFFER_SIZE <= 0)
 	{
 		free(stash);
 		stash = NULL;
