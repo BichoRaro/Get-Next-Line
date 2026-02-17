@@ -13,41 +13,33 @@
 #include "get_next_line.h"
 
 /*  
-Esta función se encarga de leer el file descriptor.
+Esta función se encarga de leer el file descriptor. He tenido de dividir en dos 
+funciones ya que me causaba fugas de memoria(LEAK).
 Comienza a leer byte por byte (leer letra por letra) hasta el tamaño del buffer (n).
-Hacemos dos verificaciones de seguridad: la moulinette tomaba invalido el read con -1 ya
-que no tomaba el buffer por lo que tuve que agregar la linea 47 y 48
-de la funcion read line, la primera es el caso de negativos (-), y
-la segunda es si los bytes a leer son cero, es decir, no hay nada que leer,
-pues directamente se detiene. Si todo ha salido bien y ha pasado las
-verificaciones de seguridad, pasamos a añadir el carácter nulo.
+Hacemos dos verificaciones de seguridad: la primera es el caso de negativos (-) 
+que me devuelva -1 si los bytes leidos son cero o un numero negativo, 
+y la segunda es si los bytes a leer son cero, es decir, no hay nada que leer, 
+pues directamente se detiene. Si todo ha salido bien y ha pasado las verificaciones 
+de seguridad, pasamos a añadir el carácter nulo un vez copiado en el buffer.
 Ahora, para poder evitar fugas de memoria (LEAK), lo que haremos es guardar el
 contenido del stack en una variable temporal. Una vez hecho eso, pasamos a utilizar
 la función ft_strjoin, y con el contenido que está guardado en la variable temporal
 y la memoria, pasamos a concatenar (unir) las cadenas. Una vez hecho eso, liberamos
-la variable temporal y liberamos el bloque de memoria.
+la variable temporal y liberamos el bloque de memoria, y devolvemos la variable 
+result ya que es la que almacena el resulado (contenido leido).
 */
 
-static int	read_line(int fd, char **stash)
+static int	fill_buffer(int fd, char **stash, char	*buffer)
 {
-	char	*buffer;
 	char	*tmp;
 	ssize_t	bytes_read;
 
-	if (*stash == NULL)
-		*stash = ft_strdup("");
-	buffer = malloc(BUFFER_SIZE + 1);
-	if (!buffer)
-		return (-1);
 	bytes_read = 1;
 	while (!ft_strchr(*stash, '\n') && bytes_read > 0)
 	{
 		bytes_read = read(fd, buffer, BUFFER_SIZE);
 		if (bytes_read < 0)
-		{
-			free(buffer);
 			return (-1);
-		}
 		if (bytes_read == 0)
 			break ;
 		buffer[bytes_read] = '\0';
@@ -55,8 +47,22 @@ static int	read_line(int fd, char **stash)
 		*stash = ft_strjoin(tmp, buffer);
 		free(tmp);
 	}
-	free(buffer);
 	return (0);
+}
+
+static int	read_line(int fd, char **stash)
+{
+	char	*buffer;
+	int		result;
+
+	if (*stash == NULL)
+		*stash = ft_strdup("");
+	buffer = malloc(BUFFER_SIZE + 1);
+	if (!buffer)
+		return (-1);
+	result = fill_buffer(fd, stash, buffer);
+	free(buffer);
+	return (result);
 }
 
 /*
